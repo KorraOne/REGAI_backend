@@ -13,13 +13,14 @@ def get_current_user(token = Depends(security)):
     """
     try:
         payload = decode_access_token(token.credentials)
-        user_id = payload.get("user_id")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-    except JWTError:
+    except Exception:
+        # Catch ANY decode failure, not just JWTError
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    # Look up user in the in-memory DB
+    user_id = payload.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
     user = next((u for u in db.users if u["id"] == user_id), None)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
