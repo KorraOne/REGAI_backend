@@ -1,20 +1,15 @@
 from fastapi import HTTPException
+from passlib.context import CryptContext
 import app.db as db
 import copy
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def hash_password(password: str):
-    password = password.lower()
-    result = []
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
-    for char in password:
-        if char.isalpha():
-            num = ord(char) - ord('a') + 1
-            result.append(str(num))
-        else:
-            result.append(char)
-
-    return "-".join(result)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def email_exists(email: str):

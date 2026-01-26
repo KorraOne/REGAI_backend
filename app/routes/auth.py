@@ -58,8 +58,8 @@ def login(payload: LoginRequest):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    hashed_password = _utils.hash_password(payload.password)
-    if user["password"] != hashed_password:
+    # bcrypt verification
+    if not _utils.verify_password(payload.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token({"user_id": user["id"]})
