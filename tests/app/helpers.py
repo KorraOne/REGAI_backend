@@ -1,5 +1,5 @@
 import requests
-from tests.config import BASE_URL
+from tests.app.config import BASE_URL
 
 # Store results for summary
 TEST_RESULTS = []

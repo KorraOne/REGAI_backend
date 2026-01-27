@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.auth.dependencies import get_current_user
 from app.helpers._utils import get_scenario_or_404
 
-from app.models.scenarios import Requirement, RequirementUpdatedResponse, RequirementDeletedResponse
+from app.models.scenarios import Requirement, RequirementUpdatedResponse, RequirementDeletedResponse, AllRequirementsDeletedResponse
 
 router = APIRouter(prefix="/scenarios/{scenario_id}/requirements", tags=["requirements"])
 
@@ -19,7 +19,7 @@ def get_requirements(scenario_id: int, user=Depends(get_current_user)):
 # ---------------------------------------------------------
 # DELETE all requirements for a scenario
 # ---------------------------------------------------------
-@router.delete("")
+@router.delete("", response_model=AllRequirementsDeletedResponse)
 def delete_all_requirements(scenario_id: int, user=Depends(get_current_user)):
     user_id = user["id"]
     scenario = get_scenario_or_404(scenario_id, user_id)

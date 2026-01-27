@@ -1,5 +1,5 @@
-from tests.helpers import run_test, get, post, print_summary, clear_db
-from tests.config import TEST_USERS, TEST_SCENARIO
+from tests.app.helpers import run_test, get, post, print_summary, clear_db
+from tests.app.config import TEST_USERS, TEST_SCENARIO
 
 
 def main():
