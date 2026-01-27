@@ -26,7 +26,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def email_exists(email: str):
-    return any(u["email"].lower() == email.lower() for u in db.users)
+    return any(u.email.lower() == email.lower() for u in db.users)
 
 
 # ---------------------------------------------------------
@@ -34,7 +34,6 @@ def email_exists(email: str):
 # ---------------------------------------------------------
 
 def get_scenario_or_404(scenario_id: int, user_id: int) -> Scenario:
-    """Return Scenario model if owned by user_id, else 404."""
     scenario = next(
         (s for s in db.scenarios if s.id == scenario_id and s.owner_id == user_id),
         None
@@ -50,7 +49,6 @@ def get_scenario_or_404(scenario_id: int, user_id: int) -> Scenario:
 
 
 def ensure_owner(scenario: Scenario, user_id: int):
-    """Ensure the scenario belongs to the user."""
     if scenario.owner_id != user_id:
         raise HTTPException(
             403,
@@ -63,7 +61,6 @@ def ensure_owner(scenario: Scenario, user_id: int):
 # ---------------------------------------------------------
 
 def get_stakeholder_or_404(scenario: Scenario, stakeholder_id: int) -> Stakeholder:
-    """Return Stakeholder model from scenario, else 404."""
     stakeholder = next(
         (s for s in scenario.stakeholders if s.id == stakeholder_id),
         None
@@ -83,7 +80,6 @@ def get_stakeholder_or_404(scenario: Scenario, stakeholder_id: int) -> Stakehold
 # ---------------------------------------------------------
 
 def get_chat_or_404(stakeholder: Stakeholder) -> ChatHistory:
-    """Return ChatHistory model or 500 if missing."""
     chat = stakeholder.chats
 
     if chat is None:
@@ -99,7 +95,6 @@ def get_chat_or_404(stakeholder: Stakeholder) -> ChatHistory:
 
 
 def add_chat_message(chat: ChatHistory, sender: str, message: str) -> ChatMessage:
-    """Append a new ChatMessage to chat.messages."""
     new_id = len(chat.messages) + 1
 
     msg = ChatMessage(
@@ -118,8 +113,6 @@ def add_chat_message(chat: ChatHistory, sender: str, message: str) -> ChatMessag
 # ---------------------------------------------------------
 
 def clone_template(template: Scenario, user_id: int) -> Scenario:
-    """Clone a Scenario model and assign new owner."""
-    # Pydantic models have .model_copy(deep=True)
     new_scenario = template.model_copy(deep=True)
     new_scenario.owner_id = user_id
     return new_scenario

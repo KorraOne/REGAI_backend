@@ -30,7 +30,7 @@ router = APIRouter(prefix="/scenarios", tags=["scenarios"])
 
 @router.get("/", response_model=list[ScenarioSummary])
 def get_scenarios(user=Depends(get_current_user)):
-    user_id = user["id"]
+    user_id = user.id
 
     user_scenarios = [
         s for s in db.scenarios
@@ -72,7 +72,7 @@ def get_scenarios(user=Depends(get_current_user)):
 
 @router.get("/{scenario_id}", response_model=ScenarioDetail)
 def get_scenario(scenario_id: int, user=Depends(get_current_user)):
-    user_id = user["id"]
+    user_id = user.id
     scenario = _utils.get_scenario_or_404(scenario_id, user_id)
     return scenario  # already a Pydantic model
 
@@ -83,7 +83,7 @@ def get_scenario(scenario_id: int, user=Depends(get_current_user)):
 
 @router.post("/", response_model=ScenarioCreatedResponse)
 def create_scenario(payload: CreateScenarioRequest, user=Depends(get_current_user)):
-    user_id = user["id"]
+    user_id = user.id
 
     new_id = max([s.id for s in db.scenarios], default=0) + 1
 
@@ -124,7 +124,7 @@ def create_scenario(payload: CreateScenarioRequest, user=Depends(get_current_use
 
 @router.patch("/{scenario_id}", response_model=ScenarioUpdatedResponse)
 def edit_scenario(scenario_id: int, payload: EditScenarioRequest, user=Depends(get_current_user)):
-    user_id = user["id"]
+    user_id = user.id
     scenario = _utils.get_scenario_or_404(scenario_id, user_id)
 
     data = payload.dict(exclude_unset=True)
@@ -172,7 +172,7 @@ def edit_scenario(scenario_id: int, payload: EditScenarioRequest, user=Depends(g
 
 @router.delete("/{scenario_id}", response_model=ScenarioDeletedResponse)
 def delete_scenario(scenario_id: int, user=Depends(get_current_user)):
-    user_id = user["id"]
+    user_id = user.id
     scenario = _utils.get_scenario_or_404(scenario_id, user_id)
 
     db.scenarios.remove(scenario)

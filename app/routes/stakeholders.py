@@ -8,14 +8,14 @@ router = APIRouter(prefix="/scenarios/{scenario_id}/stakeholders/{stakeholder_id
 
 @router.get("/chat", response_model=ChatHistory)
 def get_chat_history(scenario_id: int, stakeholder_id: int, user=Depends(get_current_user)):
-    scenario = get_scenario_or_404(scenario_id, user["id"])
+    scenario = get_scenario_or_404(scenario_id, user.id)
     stakeholder = get_stakeholder_or_404(scenario, stakeholder_id)
     return stakeholder.chats  # already a ChatHistory model
 
 
 @router.get("/chat/last", response_model=ChatMessage | None)
 def get_last_chat(scenario_id: int, stakeholder_id: int, user=Depends(get_current_user)):
-    scenario = get_scenario_or_404(scenario_id, user["id"])
+    scenario = get_scenario_or_404(scenario_id, user.id)
     stakeholder = get_stakeholder_or_404(scenario, stakeholder_id)
 
     if not stakeholder.chats.messages:
@@ -26,7 +26,7 @@ def get_last_chat(scenario_id: int, stakeholder_id: int, user=Depends(get_curren
 
 @router.post("/chat", response_model=ChatMessage)
 def send_message(scenario_id: int, stakeholder_id: int, request: ChatMessageRequest, user=Depends(get_current_user)):
-    scenario = get_scenario_or_404(scenario_id, user["id"])
+    scenario = get_scenario_or_404(scenario_id, user.id)
     stakeholder = get_stakeholder_or_404(scenario, stakeholder_id)
     chat = stakeholder.chats
 
