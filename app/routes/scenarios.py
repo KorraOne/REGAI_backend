@@ -13,6 +13,7 @@ from app.models.scenarios import (
     ScenarioCreatedResponse,
     ScenarioUpdatedResponse,
     ScenarioDeletedResponse,
+    ChatHistory,
 )
 
 import app.db as db
@@ -24,24 +25,6 @@ router = APIRouter(prefix="/scenarios", tags=["scenarios"])
 
 
 # -------------------------
-# Helper: normalize scenario
-# -------------------------
-
-def normalize_scenario(raw: dict) -> Scenario:
-    return Scenario(
-        id=raw["id"],
-        owner_id=raw["owner_id"],
-        title=raw["title"],
-        short_desc=raw["short_desc"],
-        long_desc=raw["long_desc"],
-        categories=[Category(**c) for c in raw["categories"]],
-        stakeholders=[Stakeholder(**st) for st in raw["stakeholders"]],
-        seniordev=SeniorDev(**raw["seniordev"]),
-        requirements=[Requirement(**r) for r in raw["requirements"]],
-    )
-
-
-# -------------------------
 # GET all scenarios (summary)
 # -------------------------
 
@@ -50,24 +33,33 @@ def get_scenarios(user=Depends(get_current_user)):
     user_id = user["id"]
 
     user_scenarios = [
-        normalize_scenario(s)
-        for s in db.scenarios
-        if s["owner_id"] == user_id
+        s for s in db.scenarios
+        if s.owner_id == user_id
     ]
 
-    summaries = []
+    summaries: list[ScenarioSummary] = []
     for s in user_scenarios:
         summaries.append(
             ScenarioSummary(
                 id=s.id,
                 title=s.title,
                 short_desc=s.short_desc,
-                categories=[c.name for c in s.categories],
+                categories=s.categories,
                 stakeholders=[
-                    {"id": st.id, "name": st.name, "role": st.role}
+                    {
+                        "id": st.id,
+                        "name": st.name,
+                        "role": st.role,
+                        "desc": st.desc,
+                    }
                     for st in s.stakeholders
                 ],
-                seniordev={"id": s.seniordev.id, "name": s.seniordev.name},
+                seniordev={
+                    "id": s.seniordev.id,
+                    "name": s.seniordev.name,
+                    "role": s.seniordev.role,
+                    "desc": s.seniordev.desc,
+                },
             )
         )
 
@@ -81,9 +73,8 @@ def get_scenarios(user=Depends(get_current_user)):
 @router.get("/{scenario_id}", response_model=ScenarioDetail)
 def get_scenario(scenario_id: int, user=Depends(get_current_user)):
     user_id = user["id"]
-    raw = _utils.get_scenario_or_404(scenario_id, user_id)
-    scenario = normalize_scenario(raw)
-    return scenario
+    scenario = _utils.get_scenario_or_404(scenario_id, user_id)
+    return scenario  # already a Pydantic model
 
 
 # -------------------------
@@ -94,28 +85,34 @@ def get_scenario(scenario_id: int, user=Depends(get_current_user)):
 def create_scenario(payload: CreateScenarioRequest, user=Depends(get_current_user)):
     user_id = user["id"]
 
-    new_id = max([s["id"] for s in db.scenarios], default=0) + 1
+    new_id = max([s.id for s in db.scenarios], default=0) + 1
 
-    new_scenario = {
-        "id": new_id,
-        "owner_id": user_id,
-        "title": payload.title,
-        "short_desc": payload.short_desc,
-        "long_desc": payload.long_desc,
-        "categories": [c.dict() for c in payload.categories],
-        "stakeholders": [],
-        "seniordev": {
-            "id": 0,
-            "name": "Senior Dev",
-            "role": "Senior Developer",
-            "desc": "Your senior developer assistant",
-            "chats": {
-                "id": 1,
-                "messages": []
-            }
-        },
-        "requirements": [],
-    }
+    new_scenario = Scenario(
+        id=new_id,
+        owner_id=user_id,
+        title=payload.title,
+        short_desc=payload.short_desc,
+        long_desc=payload.long_desc,
+        categories=payload.categories,
+        stakeholders=[
+            Stakeholder(
+                id=st.id,
+                name=st.name,
+                role=st.role,
+                desc=st.desc,
+                chats=ChatHistory(id=1, messages=[]),
+            )
+            for st in payload.stakeholders
+        ],
+        seniordev=SeniorDev(
+            id=0,
+            name="Senior Dev",
+            role="Senior Developer",
+            desc="Your senior developer assistant",
+            chats=ChatHistory(id=1, messages=[]),
+        ),
+        requirements=[],
+    )
 
     db.scenarios.append(new_scenario)
     return ScenarioCreatedResponse(scenario_id=new_id)
@@ -130,8 +127,41 @@ def edit_scenario(scenario_id: int, payload: EditScenarioRequest, user=Depends(g
     user_id = user["id"]
     scenario = _utils.get_scenario_or_404(scenario_id, user_id)
 
-    for field, value in payload.dict(exclude_unset=True).items():
-        scenario[field] = value
+    data = payload.dict(exclude_unset=True)
+
+    # Update simple fields
+    if "title" in data and data["title"] is not None:
+        scenario.title = data["title"]
+
+    if "short_desc" in data and data["short_desc"] is not None:
+        scenario.short_desc = data["short_desc"]
+
+    if "long_desc" in data and data["long_desc"] is not None:
+        scenario.long_desc = data["long_desc"]
+
+    # Update categories
+    if "categories" in data and data["categories"] is not None:
+        scenario.categories = data["categories"]
+
+    # Update stakeholders
+    if "stakeholders" in data and data["stakeholders"] is not None:
+        updated = []
+        for st in data["stakeholders"]:
+            st_dict = st.dict() if hasattr(st, "dict") else st
+
+            existing = next((x for x in scenario.stakeholders if x.id == st_dict["id"]), None)
+
+            updated.append(
+                Stakeholder(
+                    id=st_dict["id"],
+                    name=st_dict["name"],
+                    role=st_dict["role"],
+                    desc=st_dict["desc"],
+                    chats=existing.chats if existing else ChatHistory(id=1, messages=[]),
+                )
+            )
+
+        scenario.stakeholders = updated
 
     return ScenarioUpdatedResponse()
 

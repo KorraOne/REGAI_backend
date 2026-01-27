@@ -14,5 +14,4 @@ def state_db():
 def clear_db():
     db.users.clear()
     db.scenarios.clear()
-    db.requirements.clear()
     return {"status": "cleared"}
