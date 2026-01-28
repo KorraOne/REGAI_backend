@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from app.models.auth import (
+from app.models.auth.requests import (
     RegisterRequest,
     LoginRequest,
+)
+from app.models.auth.responses import (
     RegisterResponse,
     LoginResponse,
     UserResponse,

@@ -1,20 +1,12 @@
 from fastapi import APIRouter, Depends
 
-from app.models.scenarios import (
-    Scenario,
-    Category,
-    Stakeholder,
-    SeniorDev,
-    Requirement,
-    ScenarioSummary,
-    ScenarioDetail,
-    CreateScenarioRequest,
-    EditScenarioRequest,
-    ScenarioCreatedResponse,
-    ScenarioUpdatedResponse,
-    ScenarioDeletedResponse,
-    ChatHistory,
-)
+from app.models.scenarios.domain.scenario import Scenario, Stakeholder, SeniorDev
+from app.models.scenarios.domain.chat import ChatHistory, ChatMessage
+from app.models.scenarios.dto.create import CreateScenarioRequest, RequirementCreateRequest, ChatMessageRequest
+from app.models.scenarios.dto.detail import ScenarioDetail
+from app.models.scenarios.dto.responses import RequirementDeletedResponse, RequirementUpdatedResponse, AllRequirementsDeletedResponse, ScenarioCreatedResponse, ScenarioDeletedResponse, ScenarioUpdatedResponse
+from app.models.scenarios.dto.summary import ScenarioSummary, SeniorDevSummary, StakeholderSummary
+from app.models.scenarios.dto.update import EditScenarioRequest, RequirementUpdateRequest
 
 import app.db as db
 import app.helpers._utils as _utils
@@ -37,33 +29,17 @@ def get_scenarios(user=Depends(get_current_user)):
         if s.owner_id == user_id
     ]
 
-    summaries: list[ScenarioSummary] = []
-    for s in user_scenarios:
-        summaries.append(
-            ScenarioSummary(
-                id=s.id,
-                title=s.title,
-                short_desc=s.short_desc,
-                categories=s.categories,
-                stakeholders=[
-                    {
-                        "id": st.id,
-                        "name": st.name,
-                        "role": st.role,
-                        "desc": st.desc,
-                    }
-                    for st in s.stakeholders
-                ],
-                seniordev={
-                    "id": s.seniordev.id,
-                    "name": s.seniordev.name,
-                    "role": s.seniordev.role,
-                    "desc": s.seniordev.desc,
-                },
-            )
+    return [
+        ScenarioSummary(
+            id=s.id,
+            title=s.title,
+            short_desc=s.short_desc,
+            categories=s.categories,
+            stakeholders=s.stakeholders,
+            seniordev=s.seniordev,
         )
-
-    return summaries
+        for s in user_scenarios
+    ]
 
 
 # -------------------------
@@ -74,7 +50,7 @@ def get_scenarios(user=Depends(get_current_user)):
 def get_scenario(scenario_id: int, user=Depends(get_current_user)):
     user_id = user.id
     scenario = _utils.get_scenario_or_404(scenario_id, user_id)
-    return scenario  # already a Pydantic model
+    return scenario  # Already a Pydantic model
 
 
 # -------------------------
@@ -127,36 +103,31 @@ def edit_scenario(scenario_id: int, payload: EditScenarioRequest, user=Depends(g
     user_id = user.id
     scenario = _utils.get_scenario_or_404(scenario_id, user_id)
 
-    data = payload.dict(exclude_unset=True)
+    # Update simple fields directly from the model
+    if payload.title is not None:
+        scenario.title = payload.title
 
-    # Update simple fields
-    if "title" in data and data["title"] is not None:
-        scenario.title = data["title"]
+    if payload.short_desc is not None:
+        scenario.short_desc = payload.short_desc
 
-    if "short_desc" in data and data["short_desc"] is not None:
-        scenario.short_desc = data["short_desc"]
+    if payload.long_desc is not None:
+        scenario.long_desc = payload.long_desc
 
-    if "long_desc" in data and data["long_desc"] is not None:
-        scenario.long_desc = data["long_desc"]
-
-    # Update categories
-    if "categories" in data and data["categories"] is not None:
-        scenario.categories = data["categories"]
+    if payload.categories is not None:
+        scenario.categories = payload.categories
 
     # Update stakeholders
-    if "stakeholders" in data and data["stakeholders"] is not None:
+    if payload.stakeholders is not None:
         updated = []
-        for st in data["stakeholders"]:
-            st_dict = st.dict() if hasattr(st, "dict") else st
-
-            existing = next((x for x in scenario.stakeholders if x.id == st_dict["id"]), None)
+        for st in payload.stakeholders:
+            existing = next((x for x in scenario.stakeholders if x.id == st.id), None)
 
             updated.append(
                 Stakeholder(
-                    id=st_dict["id"],
-                    name=st_dict["name"],
-                    role=st_dict["role"],
-                    desc=st_dict["desc"],
+                    id=st.id,
+                    name=st.name,
+                    role=st.role,
+                    desc=st.desc,
                     chats=existing.chats if existing else ChatHistory(id=1, messages=[]),
                 )
             )

@@ -3,12 +3,8 @@ from passlib.context import CryptContext
 import app.db as db
 import time
 
-from app.models.scenarios import (
-    Scenario,
-    Stakeholder,
-    ChatHistory,
-    ChatMessage,
-)
+from app.models.scenarios.domain.scenario import Scenario, Stakeholder
+from app.models.scenarios.domain.chat import ChatHistory, ChatMessage
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

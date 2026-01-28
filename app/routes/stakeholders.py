@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.auth.dependencies import get_current_user
-from app.models.scenarios import ChatHistory, ChatMessage, ChatMessageRequest
+from app.models.scenarios.domain.chat import ChatHistory, ChatMessage
+from app.models.scenarios.dto.create import ChatMessageRequest
 from app.helpers._utils import get_scenario_or_404, get_stakeholder_or_404, add_chat_message
 
 router = APIRouter(prefix="/scenarios/{scenario_id}/stakeholders/{stakeholder_id}", tags=["stakeholders"])

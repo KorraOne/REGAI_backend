@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Literal
 from ..domain.category import Category
 from ..dto.summary import StakeholderSummary
 
@@ -12,3 +12,7 @@ class CreateScenarioRequest(BaseModel):
 
 class ChatMessageRequest(BaseModel):
     message: str
+
+class RequirementCreateRequest(BaseModel):
+    type: Literal["functional", "non-functional"]
+    info: str
