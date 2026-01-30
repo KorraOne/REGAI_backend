@@ -1,7 +1,9 @@
 from datetime import datetime
+from enum import Enum as PyEnum
+
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, ForeignKey,
-    Enum, TIMESTAMP
+    Enum, TIMESTAMP, func
 )
 from sqlalchemy.orm import relationship, declarative_base
 
@@ -11,13 +13,21 @@ Base = declarative_base()
 # Soft delete mixin
 # ---------------------------------------------------------
 class SoftDeleteMixin:
-    deleted_at = Column(TIMESTAMP, nullable=True)
+    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
+
+# ---------------------------------------------------------
+# Created at mixin
+# ---------------------------------------------------------
+class TimestampMixin:
+    created_at = Column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
 
 # ---------------------------------------------------------
 # Enum for marking status
 # ---------------------------------------------------------
-from enum import Enum as PyEnum
-
 class MarkingStatus(PyEnum):
     draft = "draft"
     submitted = "submitted"
@@ -27,7 +37,7 @@ class MarkingStatus(PyEnum):
 # ---------------------------------------------------------
 # USERS
 # ---------------------------------------------------------
-class Users(Base, SoftDeleteMixin):
+class Sccenarios(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
@@ -37,26 +47,24 @@ class Users(Base, SoftDeleteMixin):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
 
-    # relationships
     owned_scenarios = relationship("Scenarios", back_populates="owner")
 
 # ---------------------------------------------------------
 # CLASS
 # ---------------------------------------------------------
-class Class(Base, SoftDeleteMixin):
+class Class(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "class"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
 
-    # relationships
     students = relationship("StudentsOfClass", back_populates="class_")
     teachers = relationship("ClassTeacher", back_populates="class_")
 
 # ---------------------------------------------------------
 # CLASS ↔ TEACHER (many-to-many)
 # ---------------------------------------------------------
-class ClassTeacher(Base, SoftDeleteMixin):
+class ClassTeacher(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "class_teacher"
 
     id = Column(Integer, primary_key=True)
@@ -69,7 +77,7 @@ class ClassTeacher(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # STUDENTS OF CLASS (many-to-many)
 # ---------------------------------------------------------
-class StudentsOfClass(Base, SoftDeleteMixin):
+class StudentsOfClass(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "students_of_class"
 
     id = Column(Integer, primary_key=True)
@@ -82,7 +90,7 @@ class StudentsOfClass(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # SENIOR DEV TEMPLATES
 # ---------------------------------------------------------
-class SeniorDevTemplates(Base, SoftDeleteMixin):
+class SeniorDevTemplates(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "senior_dev_templates"
 
     id = Column(Integer, primary_key=True)
@@ -94,7 +102,7 @@ class SeniorDevTemplates(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # SCENARIOS
 # ---------------------------------------------------------
-class Scenarios(Base, SoftDeleteMixin):
+class Scenarios(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "scenarios"
 
     id = Column(Integer, primary_key=True)
@@ -113,7 +121,7 @@ class Scenarios(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # CATEGORIES
 # ---------------------------------------------------------
-class Categories(Base, SoftDeleteMixin):
+class Categories(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True)
@@ -124,7 +132,7 @@ class Categories(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # SCENARIO ↔ CATEGORY (many-to-many)
 # ---------------------------------------------------------
-class ScenarioCategories(Base, SoftDeleteMixin):
+class ScenarioCategories(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "scenario_categories"
 
     id = Column(Integer, primary_key=True)
@@ -137,7 +145,7 @@ class ScenarioCategories(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # STAKEHOLDER
 # ---------------------------------------------------------
-class Stakeholder(Base, SoftDeleteMixin):
+class Stakeholder(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "stakeholder"
 
     id = Column(Integer, primary_key=True)
@@ -154,12 +162,11 @@ class Stakeholder(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # CHAT HISTORY
 # ---------------------------------------------------------
-class ChatHistory(Base, SoftDeleteMixin):
+class ChatHistory(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "chat_history"
 
     id = Column(Integer, primary_key=True)
     stakeholder_id = Column(Integer, ForeignKey("stakeholder.id"), nullable=False)
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     stakeholder = relationship("Stakeholder", back_populates="chat_histories")
     messages = relationship("ChatMessage", back_populates="history")
@@ -167,12 +174,12 @@ class ChatHistory(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # CHAT MESSAGE
 # ---------------------------------------------------------
-class ChatMessage(Base, SoftDeleteMixin):
+class ChatMessage(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "chat_message"
 
     id = Column(Integer, primary_key=True)
     chat_history_id = Column(Integer, ForeignKey("chat_history.id"), nullable=False)
-    sent_at = Column(TIMESTAMP, default=datetime.utcnow)
+    sent_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     sent_by = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
 
@@ -182,7 +189,7 @@ class ChatMessage(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # REQUIREMENTS
 # ---------------------------------------------------------
-class Requirements(Base, SoftDeleteMixin):
+class Requirements(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "requirements"
 
     id = Column(Integer, primary_key=True)
@@ -196,7 +203,7 @@ class Requirements(Base, SoftDeleteMixin):
 # ---------------------------------------------------------
 # FEEDBACK REFERENCE
 # ---------------------------------------------------------
-class FeedbackReference(Base, SoftDeleteMixin):
+class FeedbackReference(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "feedback_reference"
 
     id = Column(Integer, primary_key=True)
