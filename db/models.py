@@ -37,7 +37,7 @@ class MarkingStatus(PyEnum):
 # ---------------------------------------------------------
 # USERS
 # ---------------------------------------------------------
-class Sccenarios(Base, SoftDeleteMixin, TimestampMixin):
+class Users(Base, SoftDeleteMixin, TimestampMixin):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
@@ -46,6 +46,8 @@ class Sccenarios(Base, SoftDeleteMixin, TimestampMixin):
     username = Column(String(100), unique=True, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+    subscription_expires_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    subscription_tier = Column(String(50), nullable=True)
 
     owned_scenarios = relationship("Scenarios", back_populates="owner")
 
