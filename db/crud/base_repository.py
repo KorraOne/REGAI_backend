@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-class Base_Repository:
+class BaseRepository:
     """
     Generic repository providing CRUD + soft delete operations.
     Subclasses must set `model` to a SQLAlchemy model class.
@@ -66,7 +66,7 @@ class Base_Repository:
         if not obj:
             return None
 
-        obj.deleted_at = datetime.utcnow()
+        obj.deleted_at = datetime.now(timezone.utc)
         self.db.commit()
         return obj
 
