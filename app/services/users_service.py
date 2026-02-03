@@ -93,7 +93,10 @@ class UsersService:
         if user.subscription_expires_at is None:
             return False
 
-        return user.subscription_expires_at > datetime.now(timezone.utc)
+        expiry = user.subscription_expires_at
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        return expiry > datetime.now(timezone.utc)
 
     def get_subscription_expiry(self, user_id: int):
         """Return the subscription expiry datetime."""
